@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>Agenda Telefonica</title>
+	<style>
+		body {
+			background-color:  #fff7e6;
+			max-width: 800px;
+			margin: auto;
+		}
+
+		h1 {
+			font-size: 40px;
+		} 
+
+		form, table {
+			background-color: #ffcc00;
+			padding: 20px;
+			margin:10px;
+			border: 1px solid #ffcc00;
+			border-radius: 10px;
+			width: 800px;
+			font-size: 18px;
+		}
+
+		table {
+			width: 840px;
+		}
+
+		.nume_input, .telefon_input {
+			margin:5px 30px 10px 0px;
+			width: 250px;
+			height: 22px;
+			border: 1px solid white;
+			border-radius: 5px;
+		}
+
+		.button_input {
+			background-color: #0059b3;
+			color: white;
+			width: 150px;
+			height: 35px;
+			border: 1px solid #0059b3;
+			border-radius: 5px;
+		}
+
+		.deleteBtn, .editBtn {
+			margin: 0 auto;
+			padding: 20px; 
+		}
+		.red {
+			background-color: red;
+		}
+
+		#table_hidden {
+			display: none;
+		}
+		#table_hidden.visible {
+			display: block;
+		}
+
+	</style>
+	<script>
+
+		var agenda=[];
+		var indexEditare = -1;
+		
+		function getAgenda(){
+			var xhttp = new XMLHttpRequest();
+			xhttp.onreadystatechange = function() {
+				if (this.readyState == 4 && this.status == 200) {
+				   agenda = JSON.parse(this.responseText);
+				   deseneazaTabel();
+				}
+			};
+			xhttp.open("GET", "https://projectfirebase-addbc.firebaseio.com/.json", true);
+			xhttp.send();
+		}
+
+		function deseneazaTabel(){
+			var str = "";
+			if(agenda.length!==0){
+					document.getElementById("table_hidden").classList.add("visible");
+				}
+				for(var i=0;i<agenda.length;i++){
+					str += `<tr>
+							<td>${agenda[i].nume}</td>
+							<td>${agenda[i].telefon}</td>
+							<td>
+								<a class="editBtn"  onclick="editeaza(${i});">Modifica</a>
+								<a class="deleteBtn"  onclick="sterge(${i});">Sterge</a>
+							</td>
+					</tr>`;
+				}
+				document.querySelector("table tbody").innerHTML=str;
+		}
+
+		function adauga(t,event){
+			var tlfnumber =document.querySelector(".telefon_input").value;
+			if(tlfnumber.length<=10){
+					document.querySelector(".telefon_input").classList.add("red");
+				}else{
+					document.querySelector(".telefon_input").classList.remove("red");
+				
+			var telefonul = {};
+			var inputs = t.querySelectorAll("input[name]");
+			for(var i=0;i<inputs.length;i++){
+				var a = inputs[i].getAttribute("name");
+				var v = inputs[i].value;
+				telefonul[a] = v;
+			}
+			if(indexEditare===-1){
+				var http = new XMLHttpRequest();
+				xhttp.onreadystatechange = function() {
+					if (this.readyState == 4 && this.status == 200) {
+						getAgenda();
+					}
+				};
+				xhttp.open("POST", "https://projectfirebase-addbc.firebaseio.com/.json", true);
+				xhttp.send(JSON.stringify(telefonul));
+			}else{
+				var xhttp = new XMLHttpRequest();
+				xhttp.onreadystatechange = function() {
+					if (this.readyState == 4 && this.status == 200) {
+						getAgenda();
+					}
+				}; 
+				xhttp.open("PUT", `https://projectfirebase-addbc.firebaseio.com/${indexEditare}.json`, true);
+				xhttp.send(JSON.stringify(telefonul));
+				indexEditare = -1;
+				}
+				deseneazaTabel();
+				t.reset();
+			}
+		}
+
+		function sterge(idx){
+			if(confirm("Do you want to delete?")){
+				var xhttp = new XMLHttpRequest();
+				xhttp.onreadystatechange = function() {
+					if (this.readyState == 4 && this.status == 200) {
+					   getAgenda();
+					}
+				};
+				xhttp.open("DELETE", `https://projectfirebase-addbc.firebaseio.com/${idx}.json`, true);
+				xhttp.send();	
+			}
+		}
+
+		function editeaza(idx){
+			var numarul = agenda[idx];
+			var inputs = document.querySelectorAll("#formAdaugare input[name]");
+			for(var i=0;i<inputs.length;i++){
+				var a = inputs[i].getAttribute("name");
+				inputs[i].value=numarul[a];	
+			}
+			console.log(idx,numarul);
+			indexEditare=idx; 
+		}
+
+	</script>
+</head>
+<body onload="getAgenda();">
+
+	<h1 align="center">Agenda</h1>
+
+	<form id=formAdaugare onsubmit="adauga(this,event)">
+		Nume: <input class="nume_input" type="text" name="nume" maxlength="30"/>
+		Telefon: <input class="telefon_input" type="number" name="telefon" /><br />
+		<button class="button_input" type="submit">ADAUGA CONTACT</button>
+	</form>
+
+	<table id="table_hidden">
+		<thead>
+			<tr>
+				<td><h3>Nume</h3></td>
+				<td><h3>Telefon</h3></td>
+			</tr>
+		</thead>
+		<tbody></tbody>
+	</table>
+</body>
+</html>
